@@ -22,6 +22,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
+import com.openclassrooms.tourguide.dto.NearbyAttraction;
+
 import gpsUtil.GpsUtil;
 import gpsUtil.location.Attraction;
 import gpsUtil.location.Location;
@@ -100,6 +102,20 @@ public class TourGuideService {
 				.sorted(Comparator.comparingDouble(
 						attraction -> rewardsService.getDistance(attraction, visitedLocation.location)))
 				.limit(5)
+				.collect(Collectors.toList());
+	}
+
+	public List<NearbyAttraction> getNearbyAttractionRecommendations(User user, VisitedLocation visitedLocation) {
+		Location userLocation = visitedLocation.location;
+		return getNearByAttractions(visitedLocation).stream()
+				.map(attraction -> new NearbyAttraction(
+						attraction.attractionName,
+						attraction.latitude,
+						attraction.longitude,
+						userLocation.latitude,
+						userLocation.longitude,
+						rewardsService.getDistance(attraction, userLocation),
+						rewardsService.getRewardPoints(attraction, user)))
 				.collect(Collectors.toList());
 	}
 

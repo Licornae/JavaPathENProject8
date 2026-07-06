@@ -7,9 +7,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import gpsUtil.location.Attraction;
 import gpsUtil.location.VisitedLocation;
 
+import com.openclassrooms.tourguide.dto.NearbyAttraction;
 import com.openclassrooms.tourguide.service.TourGuideService;
 import com.openclassrooms.tourguide.user.User;
 import com.openclassrooms.tourguide.user.UserReward;
@@ -32,19 +32,11 @@ public class TourGuideController {
     	return tourGuideService.getUserLocation(getUser(userName));
     }
     
-    //  TODO: Change this method to no longer return a List of Attractions.
- 	//  Instead: Get the closest five tourist attractions to the user - no matter how far away they are.
- 	//  Return a new JSON object that contains:
-    	// Name of Tourist attraction, 
-        // Tourist attractions lat/long, 
-        // The user's location lat/long, 
-        // The distance in miles between the user's location and each of the attractions.
-        // The reward points for visiting each Attraction.
-        //    Note: Attraction reward points can be gathered from RewardsCentral
     @RequestMapping("/getNearbyAttractions") 
-    public List<Attraction> getNearbyAttractions(@RequestParam String userName) {
-    	VisitedLocation visitedLocation = tourGuideService.getUserLocation(getUser(userName));
-    	return tourGuideService.getNearByAttractions(visitedLocation);
+    public List<NearbyAttraction> getNearbyAttractions(@RequestParam String userName) {
+    	User user = getUser(userName);
+    	VisitedLocation visitedLocation = tourGuideService.getUserLocation(user);
+    	return tourGuideService.getNearbyAttractionRecommendations(user, visitedLocation);
     }
     
     @RequestMapping("/getRewards") 

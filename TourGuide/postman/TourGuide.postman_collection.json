@@ -1,0 +1,87 @@
+{
+	"info": {
+		"_postman_id": "dee9b50f-231c-451c-a47d-53b2528d5bf7",
+		"name": "TourGuide",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "45936313"
+	},
+	"item": [
+		{
+			"name": "http://localhost:8080/getNearbyAttractions",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8080/getNearbyAttractions?userName=internalUser1",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"getNearbyAttractions"
+					],
+					"query": [
+						{
+							"key": "userName",
+							"value": "internalUser1"
+						}
+					]
+				}
+			},
+			"response": [
+				{
+					"name": "http://localhost:8080/getNearbyAttractions",
+					"originalRequest": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/getNearbyAttractions?userName=internalUser1",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"getNearbyAttractions"
+							],
+							"query": [
+								{
+									"key": "userName",
+									"value": "internalUser1"
+								}
+							]
+						}
+					},
+					"status": "OK",
+					"code": 200,
+					"_postman_previewlanguage": "",
+					"header": [
+						{
+							"key": "Content-Type",
+							"value": "application/json"
+						},
+						{
+							"key": "Transfer-Encoding",
+							"value": "chunked"
+						},
+						{
+							"key": "Date",
+							"value": "Mon, 06 Jul 2026 10:35:02 GMT"
+						},
+						{
+							"key": "Keep-Alive",
+							"value": "timeout=60"
+						},
+						{
+							"key": "Connection",
+							"value": "keep-alive"
+						}
+					],
+					"cookie": [],
+					"body": "[\n    {\n        \"attractionName\": \"Roger Dean Stadium\",\n        \"attractionLatitude\": 26.890959,\n        \"attractionLongitude\": -80.116577,\n        \"userLatitude\": -83.043475,\n        \"userLongitude\": -14.1004,\n        \"distanceInMiles\": 7864.059093719292,\n        \"rewardPoints\": 873\n    },\n    {\n        \"attractionName\": \"Zoo Tampa at Lowry Park\",\n        \"attractionLatitude\": 28.012804,\n        \"attractionLongitude\": -82.469269,\n        \"userLatitude\": -83.043475,\n        \"userLongitude\": -14.1004,\n        \"distanceInMiles\": 7958.629740505916,\n        \"rewardPoints\": 221\n    },\n    {\n        \"attractionName\": \"Cinderella Castle\",\n        \"attractionLatitude\": 28.419411,\n        \"attractionLongitude\": -81.5812,\n        \"userLatitude\": -83.043475,\n        \"userLongitude\": -14.1004,\n        \"distanceInMiles\": 7979.772800294817,\n        \"rewardPoints\": 138\n    },\n    {\n        \"attractionName\": \"Tiger Stadium\",\n        \"attractionLatitude\": 30.412035,\n        \"attractionLongitude\": -91.183815,\n        \"userLatitude\": -83.043475,\n        \"userLongitude\": -14.1004,\n        \"distanceInMiles\": 8190.966410845337,\n        \"rewardPoints\": 371\n    },\n    {\n        \"attractionName\": \"Texas Memorial Stadium\",\n        \"attractionLatitude\": 30.283682,\n        \"attractionLongitude\": -97.732536,\n        \"userLatitude\": -83.043475,\n        \"userLongitude\": -14.1004,\n        \"distanceInMiles\": 8235.405205033107,\n        \"rewardPoints\": 687\n    }\n]"
+				}
+			]
+		}
+	]
+}

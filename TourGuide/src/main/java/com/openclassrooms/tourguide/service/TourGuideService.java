@@ -7,17 +7,16 @@ import com.openclassrooms.tourguide.user.UserReward;
 
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
-import java.util.Comparator;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Random;
-import java.util.UUID;
+import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -34,12 +33,17 @@ import tripPricer.TripPricer;
 
 @Service
 public class TourGuideService {
+
 	private Logger logger = LoggerFactory.getLogger(TourGuideService.class);
 	private final GpsUtil gpsUtil;
 	private final RewardsService rewardsService;
 	private final TripPricer tripPricer = new TripPricer();
 	public final Tracker tracker;
 	boolean testMode = true;
+
+	private static final int TRACK_LOCATION_THREAD_POOL_SIZE = 100;
+	private final ExecutorService trackingExecutor =
+			Executors.newFixedThreadPool(TRACK_LOCATION_THREAD_POOL_SIZE);
 
 	public TourGuideService(GpsUtil gpsUtil, RewardsService rewardsService) {
 		this.gpsUtil = gpsUtil;
@@ -54,7 +58,11 @@ public class TourGuideService {
 			logger.debug("Finished initializing users");
 		}
 		tracker = new Tracker(this);
-		addShutDownHook();
+	}
+
+	@PostConstruct
+	private void startTracker() {
+		tracker.startTracking();
 	}
 
 	public List<UserReward> getUserRewards(User user) {
@@ -62,9 +70,8 @@ public class TourGuideService {
 	}
 
 	public VisitedLocation getUserLocation(User user) {
-		VisitedLocation visitedLocation = (user.getVisitedLocations().size() > 0) ? user.getLastVisitedLocation()
-				: trackUserLocation(user);
-		return visitedLocation;
+        return (!user.getVisitedLocations().isEmpty()) ? user.getLastVisitedLocation()
+                : trackUserLocation(user);
 	}
 
 	public User getUser(String userName) {
@@ -72,7 +79,7 @@ public class TourGuideService {
 	}
 
 	public List<User> getAllUsers() {
-		return internalUserMap.values().stream().collect(Collectors.toList());
+		return new ArrayList<>(internalUserMap.values());
 	}
 
 	public void addUser(User user) {
@@ -82,18 +89,38 @@ public class TourGuideService {
 	}
 
 	public List<Provider> getTripDeals(User user) {
-		int cumulatativeRewardPoints = user.getUserRewards().stream().mapToInt(i -> i.getRewardPoints()).sum();
+		int cumulativeRewardPoints = user.getUserRewards().stream().mapToInt(UserReward::getRewardPoints).sum();
 		List<Provider> providers = tripPricer.getPrice(tripPricerApiKey, user.getUserId(),
 				user.getUserPreferences().getNumberOfAdults(), user.getUserPreferences().getNumberOfChildren(),
-				user.getUserPreferences().getTripDuration(), cumulatativeRewardPoints);
+				user.getUserPreferences().getTripDuration(), cumulativeRewardPoints);
 		user.setTripDeals(providers);
 		return providers;
 	}
 
 	public VisitedLocation trackUserLocation(User user) {
+		VisitedLocation visitedLocation = fetchAndStoreUserLocation(user);
+		rewardsService.calculateRewards(user);
+		return visitedLocation;
+	}
+
+	public void trackUsersLocationAsync(List<User> users) {
+
+		List<CompletableFuture<VisitedLocation>> locationFutures = users.stream()
+				.map(user -> CompletableFuture.supplyAsync(() -> fetchAndStoreUserLocation(user), trackingExecutor))
+				.toList();
+
+		CompletableFuture.allOf(locationFutures.toArray(new CompletableFuture[0])).join();
+
+		List<CompletableFuture<Void>> rewardsFutures = users.stream()
+				.map(user -> CompletableFuture.runAsync(() -> rewardsService.calculateRewards(user), trackingExecutor))
+				.toList();
+
+		CompletableFuture.allOf(rewardsFutures.toArray(new CompletableFuture[0])).join();
+    }
+
+	public VisitedLocation fetchAndStoreUserLocation(User user) {
 		VisitedLocation visitedLocation = gpsUtil.getUserLocation(user.getUserId());
 		user.addToVisitedLocations(visitedLocation);
-		rewardsService.calculateRewards(user);
 		return visitedLocation;
 	}
 
@@ -119,12 +146,19 @@ public class TourGuideService {
 				.collect(Collectors.toList());
 	}
 
-	private void addShutDownHook() {
-		Runtime.getRuntime().addShutdownHook(new Thread() {
-			public void run() {
-				tracker.stopTracking();
+	@PreDestroy
+	private void shutdownServices() {
+		tracker.stopTracking();
+		trackingExecutor.shutdown();
+
+		try {
+			if (!trackingExecutor.awaitTermination(10, TimeUnit.SECONDS)) {
+				trackingExecutor.shutdownNow();
 			}
-		});
+		} catch (InterruptedException e) {
+			trackingExecutor.shutdownNow();
+			Thread.currentThread().interrupt();
+		}
 	}
 
 	/**********************************************************************************
@@ -147,13 +181,18 @@ public class TourGuideService {
 
 			internalUserMap.put(userName, user);
 		});
-		logger.debug("Created " + InternalTestHelper.getInternalUserNumber() + " internal test users.");
+        logger.debug("Created {} internal test users.", InternalTestHelper.getInternalUserNumber());
 	}
 
 	private void generateUserLocationHistory(User user) {
 		IntStream.range(0, 3).forEach(i -> {
-			user.addToVisitedLocations(new VisitedLocation(user.getUserId(),
-					new Location(generateRandomLatitude(), generateRandomLongitude()), getRandomTime()));
+			user.addToVisitedLocations(
+					new VisitedLocation(user.getUserId(),
+							new Location(generateRandomLatitude(),
+							generateRandomLongitude()),
+							getRandomTime()
+					)
+			);
 		});
 	}
 

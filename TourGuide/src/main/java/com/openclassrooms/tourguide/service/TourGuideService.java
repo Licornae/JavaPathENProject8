@@ -147,7 +147,7 @@ public class TourGuideService {
 	}
 
 	@PreDestroy
-	private void shutdownServices() {
+	public void shutdown() {
 		tracker.stopTracking();
 		trackingExecutor.shutdown();
 

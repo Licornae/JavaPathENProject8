@@ -1,0 +1,34 @@
+image: maven:3.9-eclipse-temurin-17
+
+stages:
+  - compile
+  - test
+  - package
+
+variables:
+  MAVEN_OPTS: "-Dmaven.repo.local=.m2/repository"
+  MAVEN_CLI_OPTS: "-B --no-transfer-progress"
+
+cache:
+  paths:
+    - .m2/repository/
+
+compile:
+  stage: compile
+  script:
+    - mvn $MAVEN_CLI_OPTS -f TourGuide/pom.xml clean compile
+
+test:
+  stage: test
+  script:
+    - mvn $MAVEN_CLI_OPTS -f TourGuide/pom.xml test -Dtest=TestRewardsService,TestTourGuideService,TourguideApplicationTests
+
+package:
+  stage: package
+  script:
+    - mvn $MAVEN_CLI_OPTS -f TourGuide/pom.xml package -DskipTests
+  artifacts:
+    name: "tourguide-$CI_COMMIT_SHORT_SHA"
+    paths:
+      - TourGuide/target/*.jar
+    expire_in: 1 week
